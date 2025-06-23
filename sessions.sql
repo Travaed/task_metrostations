@@ -4,18 +4,24 @@ WHERE start_dttm >=  now() - interval '3 month' AND (start_station in (50, 161) 
 GROUP BY uid
 HAVING count(*) >= 50
 ;
-SELECT*
+SELECT a.*
 FROM wifi_session a
-  JOIN 
-    wifi_session b ON a.uid = b.uid 
-                    AND a.start_dttm < b.stop_dttm 
-                    AND a.start_dttm > b.start_dttm
+WHERE EXISTS (
+    SELECT 1
+    FROM wifi_session b
+    WHERE a.uid = b.uid 
+      AND a.start_dttm < b.stop_dttm
+      AND a.start_dttm > b.start_dttm
+)
 ORDER BY a.uid, a.start_dttm
 ;    
-SELECT start_station,
-    COUNT(*) AS visit_count
-FROM wifi_session
-GROUP BY start_station           -- Считал используюму станцию, откуда начинают движение
+SELECT station, COUNT(*) AS visit_count
+FROM (
+    SELECT start_station AS station FROM wifi_session
+    UNION ALL
+    SELECT stop_station AS station FROM wifi_session
+) AS combined_stations
+GROUP BY station
 ORDER BY visit_count DESC
 LIMIT 10
 ;
